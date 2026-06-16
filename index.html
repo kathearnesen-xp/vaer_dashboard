@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<script type="application/json" id="cowork-artifact-meta">
+{
+  "name": "Vaer Tre Steder V2",
+  "schemaVersion": 1,
+  "description": "Værdashboard for Sandefjord, Vaset/Valdres og Førde med animerte bakgrunner og 3-dagers prognose. Data oppdateres manuelt.",
+  "mcpTools": [
+    "mcp__workspace__web_fetch"
+  ],
+  "mcpServerNames": [
+    "workspace"
+  ]
+}
+</script>
+<html lang="no">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vær: Sandefjord, Vaset & Førde</title>
+  <style>
+    :root { color-scheme: light; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      height: 100vh;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* ---- Backgrounds ---- */
+    .bg-sunny        { background: linear-gradient(170deg, #1565c0 0%, #42a5f5 32%, #ffca28 72%, #ff8f00 100%); }
+    .bg-fair         { background: linear-gradient(170deg, #1976d2 0%, #64b5f6 48%, #ffe082 82%, #ffca28 100%); }
+    .bg-partlycloudy { background: linear-gradient(170deg, #3d5a6b 0%, #607d8b 45%, #90a4ae 78%, #b0bec5 100%); }
+    .bg-cloudy       { background: linear-gradient(170deg, #2e3f4a 0%, #455a64 50%, #78909c 100%); }
+    .bg-rain         { background: linear-gradient(170deg, #0a1520 0%, #152232 35%, #1e3040 68%, #263a4a 100%); }
+    .bg-lightrain    { background: linear-gradient(170deg, #1e2e3a 0%, #2d3f4d 42%, #405c6a 80%, #507080 100%); }
+    .bg-snow         { background: linear-gradient(170deg, #90a4ae 0%, #b0bec5 48%, #cfd8dc 80%, #eceff1 100%); }
+    .bg-thunder      { background: linear-gradient(170deg, #080810 0%, #111128 50%, #0c1840 100%); }
+    .bg-fog          { background: linear-gradient(170deg, #616161 0%, #858585 50%, #adadad 100%); }
+
+    /* ---- Panel ---- */
+    .panel {
+      flex: 1;
+      min-width: 0;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: background 1.4s ease;
+    }
+
+    /* Current weather — fills top */
+    .current {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px 14px 14px;
+      position: relative;
+      z-index: 2;
+      gap: 2px;
+    }
+
+    .city-name {
+      font-size: 1.0rem;
+      font-weight: 700;
+      color: white;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.55);
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+    }
+
+    .city-sub {
+      font-size: 0.65rem;
+      color: rgba(255,255,255,0.52);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+
+    .wx-icon {
+      font-size: 3.8rem;
+      margin: 8px 0 4px;
+      filter: drop-shadow(0 3px 8px rgba(0,0,0,0.3));
+      line-height: 1;
+    }
+
+    .temp {
+      font-size: 5rem;
+      font-weight: 100;
+      color: white;
+      text-shadow: 0 2px 18px rgba(0,0,0,0.4);
+      line-height: 1;
+      letter-spacing: -3px;
+    }
+
+    .wx-desc {
+      font-size: 0.88rem;
+      color: rgba(255,255,255,0.85);
+      margin-top: 6px;
+      letter-spacing: 0.4px;
+    }
+
+    .details {
+      display: flex;
+      gap: 14px;
+      margin-top: 12px;
+      background: rgba(0,0,0,0.22);
+      backdrop-filter: blur(6px);
+      border-radius: 12px;
+      padding: 8px 14px;
+    }
+
+    .det {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .det-lbl {
+      font-size: 0.58rem;
+      color: rgba(255,255,255,0.5);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .det-val {
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: white;
+    }
+
+    /* ---- 3-day forecast strip ---- */
+    .forecast {
+      flex-shrink: 0;
+      display: flex;
+      background: rgba(0,0,0,0.32);
+      backdrop-filter: blur(14px);
+      border-top: 1px solid rgba(255,255,255,0.1);
+      z-index: 2;
+    }
+
+    .fc-day {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 11px 4px;
+      gap: 3px;
+      border-right: 1px solid rgba(255,255,255,0.07);
+    }
+    .fc-day:last-child { border-right: none; }
+
+    .fc-lbl {
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: rgba(255,255,255,0.62);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .fc-icon { font-size: 1.55rem; line-height: 1; }
+
+    .fc-temp {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: white;
+    }
+
+    .fc-desc {
+      font-size: 0.6rem;
+      color: rgba(255,255,255,0.5);
+      text-align: center;
+      line-height: 1.3;
+      max-width: 70px;
+    }
+
+    /* ---- Divider ---- */
+    .divider {
+      width: 1px;
+      background: linear-gradient(to bottom, transparent 0%, rgba(255,255,255,0.18) 30%, rgba(255,255,255,0.18) 70%, transparent 100%);
+      flex-shrink: 0;
+      z-index: 10;
+    }
+
+    /* ---- Weather effects ---- */
+    @keyframes rain-fall {
+      0%   { transform: translateY(-10px) translateX(0); opacity: 0; }
+      8%   { opacity: 1; }
+      92%  { opacity: 0.55; }
+      100% { transform: translateY(105vh) translateX(-25px); opacity: 0; }
+    }
+
+    .rain-wrap {
+      position: absolute; inset: 0;
+      pointer-events: none; overflow: hidden; z-index: 1;
+    }
+
+    .drop {
+      position: absolute;
+      width: 1.5px;
+      background: linear-gradient(to bottom, transparent, rgba(174,214,241,0.65));
+      border-radius: 2px;
+      animation: rain-fall linear infinite;
+    }
+
+    @keyframes sun-glow {
+      0%,100% { box-shadow: 0 0 28px 8px rgba(255,213,79,0.42); }
+      50%      { box-shadow: 0 0 52px 18px rgba(255,213,79,0.64); }
+    }
+    @keyframes sun-spin { to { transform: rotate(360deg); } }
+
+    .sun {
+      position: absolute;
+      top: 20px; right: 22px;
+      width: 68px; height: 68px;
+      z-index: 1; pointer-events: none;
+    }
+
+    .sun-core {
+      position: absolute; inset: 14px;
+      background: radial-gradient(circle, #fffde7 30%, #ffd54f);
+      border-radius: 50%;
+      animation: sun-glow 3s ease-in-out infinite;
+    }
+
+    .sun-rays {
+      position: absolute; inset: 0;
+      animation: sun-spin 22s linear infinite;
+    }
+
+    .sun-ray {
+      position: absolute;
+      left: 50%; top: 0;
+      width: 2px; height: 13px;
+      background: rgba(255,213,79,0.55);
+      border-radius: 2px;
+      transform-origin: 50% 34px;
+      margin-left: -1px;
+    }
+
+    @keyframes cloud-float {
+      0%,100% { transform: translateX(0); }
+      50%      { transform: translateX(8px); }
+    }
+
+    .cloud-el {
+      position: absolute; z-index: 1;
+      pointer-events: none; opacity: 0.22;
+      top: 14px; left: 10px;
+    }
+
+    @keyframes snow-drift {
+      0%   { transform: translateY(-15px) rotate(0deg); opacity: 0; }
+      10%  { opacity: 0.85; }
+      100% { transform: translateY(108vh) rotate(360deg); opacity: 0; }
+    }
+
+    .flake {
+      position: absolute;
+      color: rgba(255,255,255,0.8);
+      animation: snow-drift linear infinite;
+      pointer-events: none;
+    }
+
+    /* ---- Loading ---- */
+    .loader {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(10,20,35,0.62);
+      color: rgba(255,255,255,0.75);
+      font-size: 0.8rem;
+      z-index: 20;
+      text-align: center; padding: 20px;
+      line-height: 1.5;
+    }
+
+    .ts {
+      position: absolute; top: 6px; left: 8px;
+      font-size: 0.58rem; color: rgba(255,255,255,0.35);
+      z-index: 5;
+    }
+
+    /* ---- Refresh button ---- */
+    #refresh-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: rgba(0,0,0,0.45);
+      backdrop-filter: blur(12px);
+      padding: 8px 16px;
+      z-index: 50;
+    }
+
+    #refresh-btn {
+      background: rgba(255,255,255,0.14);
+      border: 1px solid rgba(255,255,255,0.22);
+      color: white;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.8px;
+      padding: 5px 14px;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    #refresh-btn:hover { background: rgba(255,255,255,0.24); }
+    #refresh-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    #refresh-status {
+      font-size: 0.65rem;
+      color: rgba(255,255,255,0.45);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- SANDEFJORD -->
+  <div class="panel bg-cloudy" id="p-sandefjord">
+    <div class="loader" id="l-sandefjord">Henter vær…</div>
+    <div class="rain-wrap" id="r-sandefjord" style="display:none"></div>
+    <div class="sun" id="s-sandefjord" style="display:none">
+      <div class="sun-rays" id="sr-sandefjord"></div>
+      <div class="sun-core"></div>
+    </div>
+    <div class="cloud-el" id="c-sandefjord" style="display:none; animation: cloud-float 6s ease-in-out infinite;">
+      <svg width="96" height="48" viewBox="0 0 96 48" fill="none">
+        <ellipse cx="48" cy="35" rx="40" ry="14" fill="white"/>
+        <ellipse cx="28" cy="28" rx="22" ry="15" fill="white"/>
+        <ellipse cx="62" cy="24" rx="26" ry="17" fill="white"/>
+      </svg>
+    </div>
+    <div class="ts" id="u-sandefjord"></div>
+    <div class="current">
+      <div class="city-name">Sandefjord</div>
+      <div class="wx-icon" id="i-sandefjord">⛅</div>
+      <div class="temp" id="t-sandefjord">--°</div>
+      <div class="wx-desc" id="d-sandefjord"></div>
+      <div class="details">
+        <div class="det"><span class="det-lbl">Vind</span><span class="det-val" id="w-sandefjord">--</span></div>
+        <div class="det"><span class="det-lbl">Fukt</span><span class="det-val" id="h-sandefjord">--</span></div>
+        <div class="det"><span class="det-lbl">Skydekke</span><span class="det-val" id="k-sandefjord">--</span></div>
+      </div>
+    </div>
+    <div class="forecast" id="f-sandefjord"></div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- VASET -->
+  <div class="panel bg-cloudy" id="p-vaset">
+    <div class="loader" id="l-vaset">Henter vær…</div>
+    <div class="rain-wrap" id="r-vaset" style="display:none"></div>
+    <div class="sun" id="s-vaset" style="display:none">
+      <div class="sun-rays" id="sr-vaset"></div>
+      <div class="sun-core"></div>
+    </div>
+    <div class="cloud-el" id="c-vaset" style="display:none; animation: cloud-float 7.5s ease-in-out infinite;">
+      <svg width="96" height="48" viewBox="0 0 96 48" fill="none">
+        <ellipse cx="48" cy="35" rx="40" ry="14" fill="white"/>
+        <ellipse cx="28" cy="28" rx="22" ry="15" fill="white"/>
+        <ellipse cx="62" cy="24" rx="26" ry="17" fill="white"/>
+      </svg>
+    </div>
+    <div class="ts" id="u-vaset"></div>
+    <div class="current">
+      <div class="city-name">Vaset</div>
+      <div class="city-sub">Valdres</div>
+      <div class="wx-icon" id="i-vaset">⛅</div>
+      <div class="temp" id="t-vaset">--°</div>
+      <div class="wx-desc" id="d-vaset"></div>
+      <div class="details">
+        <div class="det"><span class="det-lbl">Vind</span><span class="det-val" id="w-vaset">--</span></div>
+        <div class="det"><span class="det-lbl">Fukt</span><span class="det-val" id="h-vaset">--</span></div>
+        <div class="det"><span class="det-lbl">Skydekke</span><span class="det-val" id="k-vaset">--</span></div>
+      </div>
+    </div>
+    <div class="forecast" id="f-vaset"></div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- FØRDE -->
+  <div class="panel bg-cloudy" id="p-forde">
+    <div class="loader" id="l-forde">Henter vær…</div>
+    <div class="rain-wrap" id="r-forde" style="display:none"></div>
+    <div class="sun" id="s-forde" style="display:none">
+      <div class="sun-rays" id="sr-forde"></div>
+      <div class="sun-core"></div>
+    </div>
+    <div class="cloud-el" id="c-forde" style="display:none; animation: cloud-float 9s ease-in-out infinite;">
+      <svg width="96" height="48" viewBox="0 0 96 48" fill="none">
+        <ellipse cx="48" cy="35" rx="40" ry="14" fill="white"/>
+        <ellipse cx="28" cy="28" rx="22" ry="15" fill="white"/>
+        <ellipse cx="62" cy="24" rx="26" ry="17" fill="white"/>
+      </svg>
+    </div>
+    <div class="ts" id="u-forde"></div>
+    <div class="current">
+      <div class="city-name">Førde</div>
+      <div class="wx-icon" id="i-forde">⛅</div>
+      <div class="temp" id="t-forde">--°</div>
+      <div class="wx-desc" id="d-forde"></div>
+      <div class="details">
+        <div class="det"><span class="det-lbl">Vind</span><span class="det-val" id="w-forde">--</span></div>
+        <div class="det"><span class="det-lbl">Fukt</span><span class="det-val" id="h-forde">--</span></div>
+        <div class="det"><span class="det-lbl">Skydekke</span><span class="det-val" id="k-forde">--</span></div>
+      </div>
+    </div>
+    <div class="forecast" id="f-forde"></div>
+  </div>
+
+  <!-- Refresh bar -->
+  <div id="refresh-bar">
+    <button id="refresh-btn" onclick="requestRefresh()">↻ Oppdater værmeldingen</button>
+    <span id="refresh-status"></span>
+  </div>
+
+  <script>
+    const CITIES = {
+      sandefjord: { lat: 59.1330, lon: 10.2167 },
+      vaset:      { lat: 60.8906, lon: 9.0814  },
+      forde:      { lat: 61.4503, lon: 5.8510  }
+    };
+
+    const DAYS = ['Søn','Man','Tir','Ons','Tor','Fre','Lør'];
+
+    function wxInfo(sym) {
+      if (!sym) return { bg:'bg-cloudy', icon:'☁️', desc:'Overskyet', type:'cloudy' };
+      const c = sym.replace(/_day$|_night$/, '');
+      return ({
+        clearsky:            { bg:'bg-sunny',        icon:'☀️',  desc:'Klarvær',           type:'sunny'        },
+        fair:                { bg:'bg-fair',          icon:'🌤️', desc:'Lettskyet',          type:'fair'         },
+        partlycloudy:        { bg:'bg-partlycloudy',  icon:'⛅',  desc:'Delvis skyet',       type:'partlycloudy' },
+        cloudy:              { bg:'bg-cloudy',        icon:'☁️',  desc:'Overskyet',          type:'cloudy'       },
+        fog:                 { bg:'bg-fog',           icon:'🌫️', desc:'Tåke',               type:'fog'          },
+        lightrain:           { bg:'bg-lightrain',     icon:'🌦️', desc:'Lett regn',          type:'rain'         },
+        lightrainshowers:    { bg:'bg-lightrain',     icon:'🌦️', desc:'Lette regnbyger',    type:'rain'         },
+        rainshowers:         { bg:'bg-rain',          icon:'🌧️', desc:'Regnbyger',          type:'rain'         },
+        rain:                { bg:'bg-rain',          icon:'🌧️', desc:'Regn',               type:'rain'         },
+        heavyrain:           { bg:'bg-rain',          icon:'⛈️', desc:'Kraftig regn',       type:'heavyrain'    },
+        heavyrainshowers:    { bg:'bg-rain',          icon:'⛈️', desc:'Kraftige regnbyger', type:'heavyrain'    },
+        lightrainandthunder: { bg:'bg-thunder',       icon:'⛈️', desc:'Lyn og regn',        type:'thunder'      },
+        rainandthunder:      { bg:'bg-thunder',       icon:'⛈️', desc:'Torden og regn',     type:'thunder'      },
+        thunder:             { bg:'bg-thunder',       icon:'⚡',  desc:'Torden',             type:'thunder'      },
+        snow:                { bg:'bg-snow',          icon:'❄️',  desc:'Snø',                type:'snow'         },
+        lightsnow:           { bg:'bg-snow',          icon:'🌨️', desc:'Lett snø',           type:'snow'         },
+        heavysnow:           { bg:'bg-snow',          icon:'❄️',  desc:'Kraftig snø',        type:'snow'         },
+        sleet:               { bg:'bg-lightrain',     icon:'🌨️', desc:'Sludd',              type:'rain'         },
+        lightsleet:          { bg:'bg-lightrain',     icon:'🌨️', desc:'Lett sludd',         type:'rain'         },
+      }[c]) || { bg:'bg-cloudy', icon:'⛅', desc:sym, type:'cloudy' };
+    }
+
+    function makeRain(id, heavy) {
+      const c = document.getElementById(id); c.innerHTML = '';
+      for (let i = 0; i < (heavy ? 52 : 26); i++) {
+        const d = document.createElement('div');
+        d.className = 'drop';
+        d.style.cssText = `left:${Math.random()*112-6}%;top:${Math.random()*100}%;` +
+          `animation-duration:${0.48+Math.random()*0.72}s;animation-delay:${Math.random()*2}s;` +
+          `height:${11+Math.random()*17}px;opacity:${0.28+Math.random()*0.52}`;
+        c.appendChild(d);
+      }
+    }
+
+    function makeRays(id) {
+      const el = document.getElementById(id); if (!el) return; el.innerHTML = '';
+      for (let i = 0; i < 12; i++) {
+        const r = document.createElement('div');
+        r.className = 'sun-ray'; r.style.transform = `rotate(${i*30}deg)`;
+        el.appendChild(r);
+      }
+    }
+
+    function makeSnow(id) {
+      const c = document.getElementById(id); c.innerHTML = '';
+      '❄❅❆'.split('').forEach(f => {
+        for (let i = 0; i < 7; i++) {
+          const el = document.createElement('div');
+          el.className = 'flake'; el.textContent = f;
+          el.style.cssText = `left:${Math.random()*100}%;top:${Math.random()*100}%;` +
+            `font-size:${0.55+Math.random()*0.7}rem;animation-duration:${4+Math.random()*7}s;` +
+            `animation-delay:${Math.random()*5}s`;
+          c.appendChild(el);
+        }
+      });
+    }
+
+    function applyFx(key, info) {
+      const panel = document.getElementById('p-'+key);
+      ['bg-sunny','bg-fair','bg-partlycloudy','bg-cloudy','bg-rain','bg-lightrain','bg-snow','bg-thunder','bg-fog']
+        .forEach(cl => panel.classList.remove(cl));
+      panel.classList.add(info.bg);
+
+      const rain  = document.getElementById('r-'+key);
+      const sun   = document.getElementById('s-'+key);
+      const cloud = document.getElementById('c-'+key);
+      rain.style.display = sun.style.display = cloud.style.display = 'none';
+
+      if      (info.type === 'rain')                               { rain.style.display = 'block'; makeRain('r-'+key, false); }
+      else if (info.type === 'heavyrain' || info.type==='thunder') { rain.style.display = 'block'; makeRain('r-'+key, true);  }
+      else if (info.type === 'snow')                               { rain.style.display = 'block'; makeSnow('r-'+key);        }
+      else if (info.type === 'sunny')                              { sun.style.display = 'block';  makeRays('sr-'+key);       }
+      else if (info.type === 'fair')                               { sun.style.display = 'block';  makeRays('sr-'+key); cloud.style.display = 'block'; }
+      else if (info.type === 'partlycloudy')                       { cloud.style.display = 'block'; }
+    }
+
+    // ---- Embedded weather data (hentet 16.06.2026 kl. 12:00 UTC fra met.no) ----
+    const EMBEDDED = {
+      sandefjord: {
+        current: { temp: 21, symbol: 'fair_day', wind: '2.0 m/s', windDir: 'Ø', humidity: 48, cloud: 18 },
+        forecast: [
+          { day: 'Ons', symbol: 'cloudy',           temp: 19 },
+          { day: 'Tor', symbol: 'fair_day',          temp: 22 },
+          { day: 'Fre', symbol: 'partlycloudy_day',  temp: 19 }
+        ]
+      },
+      vaset: {
+        current: { temp: 14, symbol: 'partlycloudy_day', wind: '1.0 m/s', windDir: 'ØSØ', humidity: 69, cloud: 74 },
+        forecast: [
+          { day: 'Ons', symbol: 'cloudy',           temp: 16 },
+          { day: 'Tor', symbol: 'partlycloudy_day', temp: 16 },
+          { day: 'Fre', symbol: 'cloudy',           temp: 19 }
+        ]
+      },
+      forde: {
+        current: { temp: 19, symbol: 'fair_day', wind: '2.6 m/s', windDir: 'NNV', humidity: 47, cloud: 37 },
+        forecast: [
+          { day: 'Ons', symbol: 'rain',      temp: 18 },
+          { day: 'Tor', symbol: 'lightrain', temp: 18 },
+          { day: 'Fre', symbol: 'rain',      temp: 20 }
+        ]
+      }
+    };
+
+    function render(key) {
+      const d    = EMBEDDED[key];
+      const cur  = d.current;
+      const info = wxInfo(cur.symbol);
+
+      document.getElementById('l-'+key).style.display = 'none';
+      document.getElementById('i-'+key).textContent = info.icon;
+      document.getElementById('t-'+key).textContent = cur.temp + '°';
+      document.getElementById('d-'+key).textContent = info.desc;
+      document.getElementById('w-'+key).textContent = cur.wind + ' ' + cur.windDir;
+      document.getElementById('h-'+key).textContent = cur.humidity + '%';
+      document.getElementById('k-'+key).textContent = cur.cloud + '%';
+      document.getElementById('u-'+key).textContent = 'Data: 16.06 kl. 12:00';
+
+      applyFx(key, info);
+
+      document.getElementById('f-'+key).innerHTML = d.forecast.map(f => {
+        const fi = wxInfo(f.symbol);
+        return `<div class="fc-day">
+          <span class="fc-lbl">${f.day}</span>
+          <span class="fc-icon">${fi.icon}</span>
+          <span class="fc-temp">${f.temp}°</span>
+          <span class="fc-desc">${fi.desc}</span>
+        </div>`;
+      }).join('');
+    }
+
+    ['sandefjord','vaset','forde'].forEach(render);
+
+    async function requestRefresh() {
+      const btn = document.getElementById('refresh-btn');
+      const status = document.getElementById('refresh-status');
+      btn.disabled = true;
+      btn.textContent = '↻ Oppdaterer…';
+      status.textContent = '';
+      try {
+        await window.cowork.runScheduledTask('vaer-daglig-oppdatering');
+        status.textContent = 'Oppdatering startet — last siden på nytt om noen sekunder.';
+      } catch(e) {
+        status.textContent = 'Kunne ikke starte oppdatering: ' + e.message;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '↻ Oppdater værmeldingen';
+      }
+    }
+  </script>
+</body>
+</html>
