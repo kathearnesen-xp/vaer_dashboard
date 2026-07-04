@@ -1,31 +1,29 @@
+
 <!DOCTYPE html>
-<script type="application/json" id="cowork-artifact-meta">
-{
-  "name": "Vaer Tre Steder V2",
-  "schemaVersion": 1,
-  "description": "Værdashboard for Sandefjord, Vaset/Valdres og Førde med animerte bakgrunner og 3-dagers prognose. Data oppdateres manuelt.",
-  "mcpTools": [
-    "mcp__workspace__web_fetch"
-  ],
-  "mcpServerNames": [
-    "workspace"
-  ]
-}
-</script>
 <html lang="no">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vær: Sandefjord, Vaset & Førde</title>
+  <title>Vær – Sandefjord · Vaset · Førde</title>
   <style>
-    :root { color-scheme: light; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      height: 100vh;
       display: flex;
-      overflow: hidden;
+      flex-direction: column;
+      min-height: 100dvh;
+      padding-bottom: 48px;
+    }
+
+    @media (min-width: 640px) {
+      body {
+        flex-direction: row;
+        height: 100dvh;
+        min-height: unset;
+        overflow: hidden;
+        padding-bottom: 0;
+      }
     }
 
     /* ---- Backgrounds ---- */
@@ -42,7 +40,7 @@
     /* ---- Panel ---- */
     .panel {
       flex: 1;
-      min-width: 0;
+      min-height: 360px;
       position: relative;
       overflow: hidden;
       display: flex;
@@ -50,7 +48,26 @@
       transition: background 1.4s ease;
     }
 
-    /* Current weather — fills top */
+    @media (min-width: 640px) {
+      .panel { min-height: unset; }
+    }
+
+    /* ---- Divider ---- */
+    .divider {
+      height: 1px;
+      flex-shrink: 0;
+      background: linear-gradient(to right, transparent 0%, rgba(255,255,255,0.18) 30%, rgba(255,255,255,0.18) 70%, transparent 100%);
+    }
+
+    @media (min-width: 640px) {
+      .divider {
+        width: 1px;
+        height: auto;
+        background: linear-gradient(to bottom, transparent 0%, rgba(255,255,255,0.18) 30%, rgba(255,255,255,0.18) 70%, transparent 100%);
+      }
+    }
+
+    /* ---- Current weather ---- */
     .current {
       flex: 1;
       display: flex;
@@ -64,7 +81,7 @@
     }
 
     .city-name {
-      font-size: 1.0rem;
+      font-size: 1rem;
       font-weight: 700;
       color: white;
       text-shadow: 0 2px 10px rgba(0,0,0,0.55);
@@ -112,12 +129,7 @@
       padding: 8px 14px;
     }
 
-    .det {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 2px;
-    }
+    .det { display: flex; flex-direction: column; align-items: center; gap: 2px; }
 
     .det-lbl {
       font-size: 0.58rem;
@@ -132,7 +144,7 @@
       color: white;
     }
 
-    /* ---- 3-day forecast strip ---- */
+    /* ---- Forecast strip ---- */
     .forecast {
       flex-shrink: 0;
       display: flex;
@@ -153,37 +165,30 @@
     }
     .fc-day:last-child { border-right: none; }
 
-    .fc-lbl {
-      font-size: 0.65rem;
-      font-weight: 700;
-      color: rgba(255,255,255,0.62);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
+    .fc-lbl { font-size: 0.65rem; font-weight: 700; color: rgba(255,255,255,0.62); text-transform: uppercase; letter-spacing: 1px; }
     .fc-icon { font-size: 1.55rem; line-height: 1; }
+    .fc-temp { font-size: 1.05rem; font-weight: 700; color: white; }
+    .fc-desc { font-size: 0.6rem; color: rgba(255,255,255,0.5); text-align: center; line-height: 1.3; max-width: 70px; }
 
-    .fc-temp {
-      font-size: 1.05rem;
-      font-weight: 700;
-      color: white;
+    /* ---- Timestamp ---- */
+    .ts {
+      position: absolute; top: 6px; left: 8px;
+      font-size: 0.58rem; color: rgba(255,255,255,0.35);
+      z-index: 5;
     }
 
-    .fc-desc {
-      font-size: 0.6rem;
-      color: rgba(255,255,255,0.5);
-      text-align: center;
-      line-height: 1.3;
-      max-width: 70px;
+    /* ---- Loading overlay ---- */
+    .loader {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(10,20,35,0.62);
+      color: rgba(255,255,255,0.75);
+      font-size: 0.8rem;
+      z-index: 20;
+      text-align: center; padding: 20px;
+      line-height: 1.5;
     }
-
-    /* ---- Divider ---- */
-    .divider {
-      width: 1px;
-      background: linear-gradient(to bottom, transparent 0%, rgba(255,255,255,0.18) 30%, rgba(255,255,255,0.18) 70%, transparent 100%);
-      flex-shrink: 0;
-      z-index: 10;
-    }
+    .loader.hidden { display: none; }
 
     /* ---- Weather effects ---- */
     @keyframes rain-fall {
@@ -193,10 +198,7 @@
       100% { transform: translateY(105vh) translateX(-25px); opacity: 0; }
     }
 
-    .rain-wrap {
-      position: absolute; inset: 0;
-      pointer-events: none; overflow: hidden; z-index: 1;
-    }
+    .rain-wrap { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 1; display: none; }
 
     .drop {
       position: absolute;
@@ -212,85 +214,26 @@
     }
     @keyframes sun-spin { to { transform: rotate(360deg); } }
 
-    .sun {
-      position: absolute;
-      top: 20px; right: 22px;
-      width: 68px; height: 68px;
-      z-index: 1; pointer-events: none;
-    }
+    .sun { position: absolute; top: 20px; right: 22px; width: 68px; height: 68px; z-index: 1; pointer-events: none; display: none; }
+    .sun-core { position: absolute; inset: 14px; background: radial-gradient(circle, #fffde7 30%, #ffd54f); border-radius: 50%; animation: sun-glow 3s ease-in-out infinite; }
+    .sun-rays { position: absolute; inset: 0; animation: sun-spin 22s linear infinite; }
+    .sun-ray { position: absolute; left: 50%; top: 0; width: 2px; height: 13px; background: rgba(255,213,79,0.55); border-radius: 2px; transform-origin: 50% 34px; margin-left: -1px; }
 
-    .sun-core {
-      position: absolute; inset: 14px;
-      background: radial-gradient(circle, #fffde7 30%, #ffd54f);
-      border-radius: 50%;
-      animation: sun-glow 3s ease-in-out infinite;
-    }
+    @keyframes cloud-float { 0%,100% { transform: translateX(0); } 50% { transform: translateX(8px); } }
 
-    .sun-rays {
-      position: absolute; inset: 0;
-      animation: sun-spin 22s linear infinite;
-    }
-
-    .sun-ray {
-      position: absolute;
-      left: 50%; top: 0;
-      width: 2px; height: 13px;
-      background: rgba(255,213,79,0.55);
-      border-radius: 2px;
-      transform-origin: 50% 34px;
-      margin-left: -1px;
-    }
-
-    @keyframes cloud-float {
-      0%,100% { transform: translateX(0); }
-      50%      { transform: translateX(8px); }
-    }
-
-    .cloud-el {
-      position: absolute; z-index: 1;
-      pointer-events: none; opacity: 0.22;
-      top: 14px; left: 10px;
-    }
+    .cloud-el { position: absolute; z-index: 1; pointer-events: none; opacity: 0.22; top: 14px; left: 10px; display: none; }
 
     @keyframes snow-drift {
       0%   { transform: translateY(-15px) rotate(0deg); opacity: 0; }
       10%  { opacity: 0.85; }
       100% { transform: translateY(108vh) rotate(360deg); opacity: 0; }
     }
+    .flake { position: absolute; color: rgba(255,255,255,0.8); animation: snow-drift linear infinite; pointer-events: none; }
 
-    .flake {
-      position: absolute;
-      color: rgba(255,255,255,0.8);
-      animation: snow-drift linear infinite;
-      pointer-events: none;
-    }
-
-    /* ---- Loading ---- */
-    .loader {
-      position: absolute; inset: 0;
-      display: flex; align-items: center; justify-content: center;
-      background: rgba(10,20,35,0.62);
-      color: rgba(255,255,255,0.75);
-      font-size: 0.8rem;
-      z-index: 20;
-      text-align: center; padding: 20px;
-      line-height: 1.5;
-    }
-
-    .ts {
-      position: absolute; top: 6px; left: 8px;
-      font-size: 0.58rem; color: rgba(255,255,255,0.35);
-      z-index: 5;
-    }
-
-    /* ---- Refresh button ---- */
+    /* ---- Refresh bar ---- */
     #refresh-bar {
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
+      position: fixed; bottom: 0; left: 0; right: 0;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
       background: rgba(0,0,0,0.45);
       backdrop-filter: blur(12px);
       padding: 8px 16px;
@@ -304,18 +247,16 @@
       font-size: 0.72rem;
       font-weight: 600;
       letter-spacing: 0.8px;
-      padding: 5px 14px;
+      padding: 7px 16px;
       border-radius: 20px;
       cursor: pointer;
       transition: background 0.2s;
+      min-height: 36px;
     }
     #refresh-btn:hover { background: rgba(255,255,255,0.24); }
     #refresh-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
-    #refresh-status {
-      font-size: 0.65rem;
-      color: rgba(255,255,255,0.45);
-    }
+    #refresh-status { font-size: 0.65rem; color: rgba(255,255,255,0.45); }
   </style>
 </head>
 <body>
@@ -323,12 +264,12 @@
   <!-- SANDEFJORD -->
   <div class="panel bg-cloudy" id="p-sandefjord">
     <div class="loader" id="l-sandefjord">Henter vær…</div>
-    <div class="rain-wrap" id="r-sandefjord" style="display:none"></div>
-    <div class="sun" id="s-sandefjord" style="display:none">
+    <div class="rain-wrap" id="r-sandefjord"></div>
+    <div class="sun" id="s-sandefjord">
       <div class="sun-rays" id="sr-sandefjord"></div>
       <div class="sun-core"></div>
     </div>
-    <div class="cloud-el" id="c-sandefjord" style="display:none; animation: cloud-float 6s ease-in-out infinite;">
+    <div class="cloud-el" id="c-sandefjord" style="animation: cloud-float 6s ease-in-out infinite;">
       <svg width="96" height="48" viewBox="0 0 96 48" fill="none">
         <ellipse cx="48" cy="35" rx="40" ry="14" fill="white"/>
         <ellipse cx="28" cy="28" rx="22" ry="15" fill="white"/>
@@ -355,12 +296,12 @@
   <!-- VASET -->
   <div class="panel bg-cloudy" id="p-vaset">
     <div class="loader" id="l-vaset">Henter vær…</div>
-    <div class="rain-wrap" id="r-vaset" style="display:none"></div>
-    <div class="sun" id="s-vaset" style="display:none">
+    <div class="rain-wrap" id="r-vaset"></div>
+    <div class="sun" id="s-vaset">
       <div class="sun-rays" id="sr-vaset"></div>
       <div class="sun-core"></div>
     </div>
-    <div class="cloud-el" id="c-vaset" style="display:none; animation: cloud-float 7.5s ease-in-out infinite;">
+    <div class="cloud-el" id="c-vaset" style="animation: cloud-float 7.5s ease-in-out infinite;">
       <svg width="96" height="48" viewBox="0 0 96 48" fill="none">
         <ellipse cx="48" cy="35" rx="40" ry="14" fill="white"/>
         <ellipse cx="28" cy="28" rx="22" ry="15" fill="white"/>
@@ -388,12 +329,12 @@
   <!-- FØRDE -->
   <div class="panel bg-cloudy" id="p-forde">
     <div class="loader" id="l-forde">Henter vær…</div>
-    <div class="rain-wrap" id="r-forde" style="display:none"></div>
-    <div class="sun" id="s-forde" style="display:none">
+    <div class="rain-wrap" id="r-forde"></div>
+    <div class="sun" id="s-forde">
       <div class="sun-rays" id="sr-forde"></div>
       <div class="sun-core"></div>
     </div>
-    <div class="cloud-el" id="c-forde" style="display:none; animation: cloud-float 9s ease-in-out infinite;">
+    <div class="cloud-el" id="c-forde" style="animation: cloud-float 9s ease-in-out infinite;">
       <svg width="96" height="48" viewBox="0 0 96 48" fill="none">
         <ellipse cx="48" cy="35" rx="40" ry="14" fill="white"/>
         <ellipse cx="28" cy="28" rx="22" ry="15" fill="white"/>
@@ -415,9 +356,8 @@
     <div class="forecast" id="f-forde"></div>
   </div>
 
-  <!-- Refresh bar -->
   <div id="refresh-bar">
-    <button id="refresh-btn" onclick="requestRefresh()">↻ Oppdater værmeldingen</button>
+    <button id="refresh-btn" onclick="refresh()">↻ Oppdater værmeldingen</button>
     <span id="refresh-status"></span>
   </div>
 
@@ -430,10 +370,15 @@
 
     const DAYS = ['Søn','Man','Tir','Ons','Tor','Fre','Lør'];
 
+    function degreesToDir(deg) {
+      const dirs = ['N','NNØ','NØ','ØNØ','Ø','ØSØ','SØ','SSØ','S','SSV','SV','VSV','V','VNV','NV','NNV'];
+      return dirs[Math.round(((deg % 360) + 360) % 360 / 22.5) % 16];
+    }
+
     function wxInfo(sym) {
       if (!sym) return { bg:'bg-cloudy', icon:'☁️', desc:'Overskyet', type:'cloudy' };
       const c = sym.replace(/_day$|_night$/, '');
-      return ({
+      const map = {
         clearsky:            { bg:'bg-sunny',        icon:'☀️',  desc:'Klarvær',           type:'sunny'        },
         fair:                { bg:'bg-fair',          icon:'🌤️', desc:'Lettskyet',          type:'fair'         },
         partlycloudy:        { bg:'bg-partlycloudy',  icon:'⛅',  desc:'Delvis skyet',       type:'partlycloudy' },
@@ -453,42 +398,83 @@
         heavysnow:           { bg:'bg-snow',          icon:'❄️',  desc:'Kraftig snø',        type:'snow'         },
         sleet:               { bg:'bg-lightrain',     icon:'🌨️', desc:'Sludd',              type:'rain'         },
         lightsleet:          { bg:'bg-lightrain',     icon:'🌨️', desc:'Lett sludd',         type:'rain'         },
-      }[c]) || { bg:'bg-cloudy', icon:'⛅', desc:sym, type:'cloudy' };
+      };
+      return map[c] || { bg:'bg-cloudy', icon:'⛅', desc:sym, type:'cloudy' };
+    }
+
+    function extractData(json) {
+      const ts = json.properties.timeseries;
+      const now = new Date();
+
+      // Entry nearest to now
+      const current = ts.reduce((best, e) =>
+        Math.abs(new Date(e.time) - now) < Math.abs(new Date(best.time) - now) ? e : best
+      );
+
+      const d = current.data;
+      const sym = (d.next_1_hours || d.next_6_hours || {}).summary?.symbol_code;
+
+      // Next 3 days at 12:00 UTC
+      const forecast = [];
+      for (let i = 1; i <= 3; i++) {
+        const date = new Date(now);
+        date.setUTCDate(date.getUTCDate() + i);
+        const target = date.toISOString().slice(0, 10) + 'T12:00:00Z';
+        const entry = ts.find(e => e.time === target);
+        if (entry) {
+          const fsym = (entry.data.next_6_hours || entry.data.next_1_hours || {}).summary?.symbol_code;
+          forecast.push({
+            day: DAYS[date.getUTCDay()],
+            symbol: fsym || 'cloudy',
+            temp: Math.round(entry.data.instant.details.air_temperature)
+          });
+        }
+      }
+
+      // Format local time
+      const entryTime = new Date(current.time);
+      const timeStr = entryTime.toLocaleString('no', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+
+      return {
+        temp: Math.round(d.instant.details.air_temperature),
+        symbol: sym || 'cloudy',
+        wind: d.instant.details.wind_speed.toFixed(1) + ' m/s',
+        windDir: degreesToDir(d.instant.details.wind_from_direction),
+        humidity: Math.round(d.instant.details.relative_humidity),
+        cloud: Math.round(d.instant.details.cloud_area_fraction),
+        time: timeStr,
+        forecast
+      };
     }
 
     function makeRain(id, heavy) {
       const c = document.getElementById(id); c.innerHTML = '';
       for (let i = 0; i < (heavy ? 52 : 26); i++) {
-        const d = document.createElement('div');
-        d.className = 'drop';
-        d.style.cssText = `left:${Math.random()*112-6}%;top:${Math.random()*100}%;` +
+        const el = document.createElement('div'); el.className = 'drop';
+        el.style.cssText = `left:${Math.random()*112-6}%;top:${Math.random()*100}%;` +
           `animation-duration:${0.48+Math.random()*0.72}s;animation-delay:${Math.random()*2}s;` +
           `height:${11+Math.random()*17}px;opacity:${0.28+Math.random()*0.52}`;
-        c.appendChild(d);
+        c.appendChild(el);
       }
     }
 
     function makeRays(id) {
       const el = document.getElementById(id); if (!el) return; el.innerHTML = '';
       for (let i = 0; i < 12; i++) {
-        const r = document.createElement('div');
-        r.className = 'sun-ray'; r.style.transform = `rotate(${i*30}deg)`;
-        el.appendChild(r);
+        const r = document.createElement('div'); r.className = 'sun-ray';
+        r.style.transform = `rotate(${i*30}deg)`; el.appendChild(r);
       }
     }
 
     function makeSnow(id) {
       const c = document.getElementById(id); c.innerHTML = '';
-      '❄❅❆'.split('').forEach(f => {
-        for (let i = 0; i < 7; i++) {
-          const el = document.createElement('div');
-          el.className = 'flake'; el.textContent = f;
-          el.style.cssText = `left:${Math.random()*100}%;top:${Math.random()*100}%;` +
-            `font-size:${0.55+Math.random()*0.7}rem;animation-duration:${4+Math.random()*7}s;` +
-            `animation-delay:${Math.random()*5}s`;
-          c.appendChild(el);
-        }
-      });
+      for (const f of ['❄','❅','❆']) for (let i = 0; i < 7; i++) {
+        const el = document.createElement('div'); el.className = 'flake'; el.textContent = f;
+        el.style.cssText = `left:${Math.random()*100}%;top:${Math.random()*100}%;` +
+          `font-size:${0.55+Math.random()*0.7}rem;animation-duration:${4+Math.random()*7}s;` +
+          `animation-delay:${Math.random()*5}s`;
+        c.appendChild(el);
+      }
     }
 
     function applyFx(key, info) {
@@ -505,56 +491,23 @@
       if      (info.type === 'rain')                               { rain.style.display = 'block'; makeRain('r-'+key, false); }
       else if (info.type === 'heavyrain' || info.type==='thunder') { rain.style.display = 'block'; makeRain('r-'+key, true);  }
       else if (info.type === 'snow')                               { rain.style.display = 'block'; makeSnow('r-'+key);        }
-      else if (info.type === 'sunny')                              { sun.style.display = 'block';  makeRays('sr-'+key);       }
-      else if (info.type === 'fair')                               { sun.style.display = 'block';  makeRays('sr-'+key); cloud.style.display = 'block'; }
+      else if (info.type === 'sunny')                              { sun.style.display  = 'block'; makeRays('sr-'+key);       }
+      else if (info.type === 'fair')                               { sun.style.display  = 'block'; makeRays('sr-'+key); cloud.style.display = 'block'; }
       else if (info.type === 'partlycloudy')                       { cloud.style.display = 'block'; }
     }
 
-    // ---- Embedded weather data (hentet 16.06.2026 kl. 12:00 UTC fra met.no) ----
-    const EMBEDDED = {
-      sandefjord: {
-        current: { temp: 21, symbol: 'fair_day', wind: '2.0 m/s', windDir: 'Ø', humidity: 48, cloud: 18 },
-        forecast: [
-          { day: 'Ons', symbol: 'cloudy',           temp: 19 },
-          { day: 'Tor', symbol: 'fair_day',          temp: 22 },
-          { day: 'Fre', symbol: 'partlycloudy_day',  temp: 19 }
-        ]
-      },
-      vaset: {
-        current: { temp: 14, symbol: 'partlycloudy_day', wind: '1.0 m/s', windDir: 'ØSØ', humidity: 69, cloud: 74 },
-        forecast: [
-          { day: 'Ons', symbol: 'cloudy',           temp: 16 },
-          { day: 'Tor', symbol: 'partlycloudy_day', temp: 16 },
-          { day: 'Fre', symbol: 'cloudy',           temp: 19 }
-        ]
-      },
-      forde: {
-        current: { temp: 19, symbol: 'fair_day', wind: '2.6 m/s', windDir: 'NNV', humidity: 47, cloud: 37 },
-        forecast: [
-          { day: 'Ons', symbol: 'rain',      temp: 18 },
-          { day: 'Tor', symbol: 'lightrain', temp: 18 },
-          { day: 'Fre', symbol: 'rain',      temp: 20 }
-        ]
-      }
-    };
-
-    function render(key) {
-      const d    = EMBEDDED[key];
-      const cur  = d.current;
-      const info = wxInfo(cur.symbol);
-
-      document.getElementById('l-'+key).style.display = 'none';
+    function render(key, data) {
+      const info = wxInfo(data.symbol);
+      document.getElementById('l-'+key).classList.add('hidden');
       document.getElementById('i-'+key).textContent = info.icon;
-      document.getElementById('t-'+key).textContent = cur.temp + '°';
+      document.getElementById('t-'+key).textContent = data.temp + '°';
       document.getElementById('d-'+key).textContent = info.desc;
-      document.getElementById('w-'+key).textContent = cur.wind + ' ' + cur.windDir;
-      document.getElementById('h-'+key).textContent = cur.humidity + '%';
-      document.getElementById('k-'+key).textContent = cur.cloud + '%';
-      document.getElementById('u-'+key).textContent = 'Data: 16.06 kl. 12:00';
-
+      document.getElementById('w-'+key).textContent = data.wind + ' ' + data.windDir;
+      document.getElementById('h-'+key).textContent = data.humidity + '%';
+      document.getElementById('k-'+key).textContent = data.cloud + '%';
+      document.getElementById('u-'+key).textContent = 'Data: ' + data.time;
       applyFx(key, info);
-
-      document.getElementById('f-'+key).innerHTML = d.forecast.map(f => {
+      document.getElementById('f-'+key).innerHTML = data.forecast.map(f => {
         const fi = wxInfo(f.symbol);
         return `<div class="fc-day">
           <span class="fc-lbl">${f.day}</span>
@@ -565,24 +518,50 @@
       }).join('');
     }
 
-    ['sandefjord','vaset','forde'].forEach(render);
+    async function fetchCity(key, forceRefresh) {
+      const { lat, lon } = CITIES[key];
+      const url = `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${lat}&lon=${lon}`;
+      const res = await fetch(url, forceRefresh ? { cache: 'no-store' } : {});
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.json();
+    }
 
-    async function requestRefresh() {
-      const btn = document.getElementById('refresh-btn');
+    async function refresh(forceRefresh = true) {
+      const btn    = document.getElementById('refresh-btn');
       const status = document.getElementById('refresh-status');
       btn.disabled = true;
-      btn.textContent = '↻ Oppdaterer…';
+      btn.textContent = '↻ Henter…';
       status.textContent = '';
-      try {
-        await window.cowork.runScheduledTask('vaer-daglig-oppdatering');
-        status.textContent = 'Oppdatering startet — last siden på nytt om noen sekunder.';
-      } catch(e) {
-        status.textContent = 'Kunne ikke starte oppdatering: ' + e.message;
-      } finally {
-        btn.disabled = false;
-        btn.textContent = '↻ Oppdater værmeldingen';
-      }
+
+      Object.keys(CITIES).forEach(k => {
+        document.getElementById('l-'+k).textContent = 'Henter vær…';
+        document.getElementById('l-'+k).classList.remove('hidden');
+      });
+
+      const keys = Object.keys(CITIES);
+      const results = await Promise.allSettled(
+        keys.map(k => fetchCity(k, forceRefresh).then(json => ({ key: k, data: extractData(json) })))
+      );
+
+      let errors = 0;
+      results.forEach((r, i) => {
+        if (r.status === 'fulfilled') {
+          render(r.value.key, r.value.data);
+        } else {
+          errors++;
+          const k = keys[i];
+          document.getElementById('l-'+k).textContent = 'Kunne ikke hente data — prøv igjen';
+        }
+      });
+
+      const now = new Date().toLocaleTimeString('no', { hour: '2-digit', minute: '2-digit' });
+      status.textContent = errors > 0 ? `${errors} stedsted feil — prøv igjen` : `Oppdatert kl. ${now}`;
+      btn.disabled = false;
+      btn.textContent = '↻ Oppdater værmeldingen';
     }
+
+    // Load on startup (use cache if available)
+    refresh(false);
   </script>
 </body>
 </html>
